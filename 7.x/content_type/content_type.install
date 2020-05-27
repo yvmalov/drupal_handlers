@@ -1,0 +1,133 @@
+<?php
+
+/**
+ * Implements hook_install().
+ */
+function content_type_install() {
+  $t = get_t();
+  
+  # Step 1 - Define the custom content type
+  $content_type = array(
+    'type'          => 'custom_content_type',
+    'name'          => $t('Новый тип материала'),
+    'description'	  => $t('Create a new custom content type'),
+    'title_label'	  => $t('Title'),
+    'base'          => 'node_content',
+    'custom'        => FALSE,
+    'module'        => 'content type',
+  );
+  $node_type = node_type_set_defaults($content_type);
+  node_type_save($node_type);
+  
+  # Step 2 - Create new fields
+  $fields = array(
+    'ct_tags' => array(
+      'field_name' => 'ct_tags',
+      'label' => 'Ключевые слова',
+      'type'  => 'taxonomy_term_reference',
+      'settings' => array(
+         'allowed_values' => array(
+           array(
+             'vocabulary' => 'tags', 
+             'parent' => 0,
+           ),
+         ),
+       ),
+       'cardinality' => -1,
+    ),
+    'ct_fio' => array(
+      'field_name' => 'ct_fio',
+      'label' => 'Ф.И.О.',
+      'type'  => 'text',
+      'cardinality' => 1,
+    ),
+  );
+
+  foreach( $fields as $field ) {
+    field_create_field($field);
+  }
+
+  # Step 3 - Attach fields to content type
+  $instances = array(
+    'ct_tags' => array(
+       'field_name' => 'ct_tags',
+       'label' => $t('Ключевые слова'),
+       'type' => 'taxonomy_term_reference',
+       'widget' => array(
+       'type' => 'taxonomy_autocomplete',
+       'module' => 'taxonomy',
+     ),
+     'display' => array(
+       'default' => array(
+         'type' => 'taxonomy_term_reference_link',
+       ),
+     ),
+   ),
+   'ct_fio' => array(
+     'field_name' => 'ct_fio',
+     'label' => $t('Ф.И.О.'),
+     'widget' => array(
+       'type' => 'textfield'
+     ),
+     'display' => array(
+       'default' => array(
+         'label' => 'inline',
+       ),
+     ),
+   ),
+ );
+	
+  foreach( $instances as $instance ) { // Loop through our instances
+    $instance['entity_type'] = 'node';
+    $instance['bundle'] = 'custom_content_type'; // Attach the instance to our content type
+    field_create_instance($instance);
+  }
+
+  # Step 4. Added role permissions for the new content type Advert
+  $editor_role = user_role_load_by_name('administrator');
+  $editor_rid = $editor_role->rid;
+  $editor_permissions = array(
+    'create custom_content_type content' => TRUE,
+    'delete any custom_content_type content' => TRUE,
+    'delete own custom_content_type content' => TRUE,
+    'edit any custom_content_type content' => TRUE,
+    'edit own custom_content_type content' => TRUE,
+  );
+  user_role_change_permissions($editor_rid, $editor_permissions);
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function content_type_uninstall() {
+  # Deleted permissions for role
+  $editor_role = user_role_load_by_name('administrator');
+  $editor_rid = $editor_role->rid;
+  $editor_permissions = array(
+    'create custom_content_type content' => FALSE,
+    'delete any custom_content_type content' => FALSE,
+    'delete own custom_content_type content' => FALSE,
+    'edit any custom_content_type content' => FALSE,
+    'edit own custom_content_type content' => FALSE,
+  );
+  user_role_change_permissions($editor_rid, $editor_permissions);
+
+  # Deleted all nodes for Advert type
+  $query = 'SELECT nid ';
+  $query .= 'FROM {node} ';
+  $query .= 'WHERE {node}.type = :type ';
+  $result = db_query( $query, array(':type'	=> 'custom_content_type') );
+  $nids = array();
+
+  foreach( $result as $row ) {
+    $nids[] = $row->nid;
+  }
+
+  node_delete_multiple($nids);
+
+  foreach( field_info_instances('node', 'custom_content_type') as $field_name	=> $instance ) {
+    field_delete_instance($instance);
+  }
+  node_type_delete('custom_content_type');
+  field_purge_batch(1000);
+}
