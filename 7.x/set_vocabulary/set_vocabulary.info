@@ -1,0 +1,6 @@
+name = Set Vocabulary
+description = Add and delete custom Vocabulary
+version = 0.1
+core = 7.x
+package = Custom
+

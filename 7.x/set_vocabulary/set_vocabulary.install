@@ -1,0 +1,35 @@
+<?php
+
+/**
+ * Implements hook_install().
+ */
+function set_vocabulary_install() {
+  if (empty(taxonomy_vocabulary_machine_name_load('voc_custom')->vid)) {
+    $voc = new stdClass();
+    $voc->name = t('Кастомный словарь');
+    $voc->machine_name = 'voc_custom';
+    taxonomy_vocabulary_save($voc);
+    $vid = $voc->vid;
+
+    $new_terms = array('Первый', 'Второй');
+    foreach ($new_terms as $key => $value) {
+      taxonomy_term_save((object) array(
+        'name' => t($value),
+        'vid' => $vid,
+        'weight' => 0,
+      ));		
+    }
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function set_vocabulary_uninstall() {
+	set_vocabulary_delete_voc('voc_custom');
+}
+
+function set_vocabulary_delete_voc($machine_name) {
+	$vid = taxonomy_vocabulary_machine_name_load($machine_name)->vid;
+	taxonomy_vocabulary_delete($vid);
+}
