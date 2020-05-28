@@ -1,0 +1,6 @@
+name = Form alter
+description = Custom example hook_form_alter
+version = 0.1
+core = 7.x
+package = Custom
+
