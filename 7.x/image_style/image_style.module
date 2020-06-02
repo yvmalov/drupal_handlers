@@ -1,0 +1,22 @@
+<?php
+
+/**
+ * Implements hook_image_default_styles().
+ */
+function image_style_image_default_styles() {
+  $styles = array();
+  $styles['bb_150x150'] = array(
+    'effects' => array(
+      array(
+        'name' => 'image_scale_and_crop',
+        'data' => array(
+          'width' => 150,
+          'height' => 150,
+        ),
+        'weight' => 0,
+      ),
+    ),
+  );
+
+  return $styles;
+}
